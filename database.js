@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const bcrypt = require('bcryptjs');
 
 const dbPath = path.resolve(__dirname, 'database.sqlite');
 const db = new sqlite3.Database(dbPath, (err) => {
@@ -85,6 +86,24 @@ const initDb = async () => {
         `);
         
         console.log('Database tables initialized.');
+        
+        // Ensure user 1 has Juan Campos credentials and hashed password
+        const hashedPassword = bcrypt.hashSync('12369*', 10);
+        await run(`UPDATE user_profiles SET name = 'Juan Campos', email = 'ingdiazjc@gmail.com', password = ? WHERE id = 1`, [hashedPassword]);
+
+        // Check if DB is empty and seed defaults
+        const vCheck = await query('SELECT COUNT(*) as count FROM vehicles');
+        if (vCheck.rows[0].count === 0) {
+            await run(`INSERT INTO user_profiles (name, email, password, use_km, is_premium) VALUES ('Juan Campos', 'ingdiazjc@gmail.com', ?, 1, 0)`, [hashedPassword]);
+            const now = Date.now();
+            const vRes = await run(`INSERT INTO vehicles (user_id, name, brand, model, year, license_plate, status, odometer, is_active, type, initial_km, initial_date, last_updated_date, calculated_kpd, usage_type) VALUES (1, 'Chery Arauca', 'Chery', 'Arauca', 2013, 'AH678LA', 'Optimal', 15000, 1, 'Car', 15000, ?, ?, 0, 'PARTICULAR')`, [now - 30 * 86400000, now]);
+            const vid = vRes.lastID || 1;
+            await run(`INSERT INTO service_logs (vehicle_id, category, title, description, cost, mileage, date, type, details) VALUES (?, 'Motor', 'Goma de valvula', 'Reemplazo de gomas de válvula', 80.0, 14000, ?, 'PREVENTIVO', 'Goma de valvula')`, [vid, now - 15 * 86400000]);
+            await run(`INSERT INTO service_logs (vehicle_id, category, title, description, cost, mileage, date, type, details) VALUES (?, 'Cambio de Aceite', 'Cambio de aceite', 'Cambio de aceite motor y filtro', 45.0, 14500, ?, 'PREVENTIVO', 'Cambio de aceite')`, [vid, now - 10 * 86400000]);
+            await run(`INSERT INTO service_logs (vehicle_id, category, title, description, cost, mileage, date, type, details) VALUES (?, 'Filtros', 'filtro de gasolina', 'Cambio de filtro de combustible', 25.0, 14000, ?, 'PREVENTIVO', 'filtro de gasolina')`, [vid, now - 20 * 86400000]);
+            await run(`INSERT INTO service_logs (vehicle_id, category, title, description, cost, mileage, date, type, details) VALUES (?, 'Motor', 'limpiesa de inyectores', 'Mantenimiento y limpieza de inyectores', 60.0, 14000, ?, 'PREVENTIVO', 'limpiesa de inyectores')`, [vid, now - 18 * 86400000]);
+            console.log('Default vehicle Chery Arauca 2013 (AH678LA) and services seeded.');
+        }
     } catch (error) {
         console.error('Error initializing database tables:', error);
     }
