@@ -22,14 +22,25 @@ app.use((req, res, next) => {
     next();
 });
 
-// Configuración de rutas
+const path = require('path');
+
+// Configuración de rutas API
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/services', serviceRoutes);
 
-app.get('/', (req, res) => {
-    res.send('GaragePulse API is running');
+// Servir archivos estáticos del portal web de GaragePulse
+const portalDistPath = path.join(__dirname, 'web-portal', 'dist');
+app.use(express.static(portalDistPath));
+
+app.use((req, res, next) => {
+    if (req.url.startsWith('/api')) {
+        return res.status(404).json({ error: 'API endpoint no encontrado' });
+    }
+    res.sendFile(path.join(portalDistPath, 'index.html'), (err) => {
+        if (err) next(err);
+    });
 });
 
 app.listen(PORT, () => {
