@@ -45,6 +45,7 @@ router.post('/', auth, async (req, res) => {
 
 router.put('/:id', auth, async (req, res) => {
     const { odometer, customIllustrationUrl, isActive, status } = req.body;
+    const initial_km = req.body.initialKm !== undefined ? req.body.initialKm : req.body.initial_km;
     const last_known_location = req.body.lastKnownLocation !== undefined ? req.body.lastKnownLocation : req.body.last_known_location;
     const last_updated_date = req.body.lastUpdatedDate !== undefined ? req.body.lastUpdatedDate : req.body.last_updated_date;
     const calculated_kpd = req.body.calculatedKpd !== undefined ? req.body.calculatedKpd : req.body.calculated_kpd;
@@ -57,6 +58,7 @@ router.put('/:id', auth, async (req, res) => {
         await run(
             `UPDATE vehicles SET 
                 odometer = COALESCE(?, odometer), 
+                initial_km = COALESCE(?, initial_km),
                 custom_illustration_url = COALESCE(?, custom_illustration_url), 
                 is_active = COALESCE(?, is_active),
                 last_known_location = COALESCE(?, last_known_location),
@@ -67,6 +69,7 @@ router.put('/:id', auth, async (req, res) => {
             WHERE id = ?`,
             [
                 odometer !== undefined ? odometer : null,
+                initial_km !== undefined ? initial_km : null,
                 customIllustrationUrl !== undefined ? customIllustrationUrl : null,
                 isActive !== undefined ? (isActive ? 1 : 0) : null,
                 last_known_location !== undefined ? last_known_location : null,
